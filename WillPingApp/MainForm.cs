@@ -14,6 +14,12 @@ public sealed class MainForm : Form
     private string logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WillPingApp", "NetworkMonitorLogs");
     private readonly Button chooseLogs = new() { Text = "保存先を変更", AutoSize = true };
     private readonly TextBox logPath = new() { ReadOnly = true, Dock = DockStyle.Top };
+    private readonly NotifyIcon trayIcon = new()
+    {
+        Icon = SystemIcons.Application,
+        Text = "WillPingApp - ダブルクリックで表示"
+    };
+    private FormWindowState restoreWindowState = FormWindowState.Normal;
     private MonitorLog? logger;
     private CancellationTokenSource? cancellation;
     private Task? monitoring;
@@ -32,6 +38,37 @@ public sealed class MainForm : Form
         stop.Click += (_, _) => cancellation?.Cancel();
         openLogs.Click += (_, _) => { try { Directory.CreateDirectory(logDir); Process.Start(new ProcessStartInfo(logDir) { UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show(ex.Message, "ログを開けません"); } };
         FormClosing += OnClosing;
+        Resize += OnWindowResize;
+        trayIcon.DoubleClick += (_, _) => RestoreFromTray();
+    }
+
+    private void OnWindowResize(object? sender, EventArgs e)
+    {
+        if (WindowState != FormWindowState.Minimized)
+        {
+            restoreWindowState = WindowState;
+            return;
+        }
+
+        trayIcon.Visible = true;
+        ShowInTaskbar = false;
+        Hide();
+    }
+
+    private void RestoreFromTray()
+    {
+        ShowInTaskbar = true;
+        Show();
+        WindowState = restoreWindowState;
+        Activate();
+        trayIcon.Visible = false;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            trayIcon.Dispose();
+        base.Dispose(disposing);
     }
 
     private void StartMonitoring()

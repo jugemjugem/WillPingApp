@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/ソリューション項目/">
+    <File Path="doc/uml/class-diagram.mmd" />
+    <File Path="doc/uml/monitor-sequence.mmd" />
+    <File Path="doc/uml/README.md" />
+    <File Path="doc/uml/window-state.mmd" />
+  </Folder>
+  <Project Path="WillPingApp/WillPingApp.csproj" />
+</Solution>

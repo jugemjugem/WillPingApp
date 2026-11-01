@@ -1,0 +1,80 @@
+classDiagram
+    direction LR
+
+    class Program {
+        <<static>>
+        -Main() void
+    }
+    class Form {
+        <<WinForms>>
+    }
+    class MainForm {
+        -string settingsPath
+        -string logDir
+        -MonitorLog logger
+        -CancellationTokenSource cancellation
+        -Task monitoring
+        -FormWindowState restoreWindowState
+        +MainForm()
+        -StartMonitoring() void
+        -MonitorAsync(CancellationToken token) Task
+        -Log(string message) void
+        -LoadSettings() void
+        -ChooseLogFolder() void
+        -OnWindowResize(object sender, EventArgs e) void
+        -RestoreFromTray() void
+        -OnClosing(object sender, FormClosingEventArgs e) void
+        #Dispose(bool disposing) void
+    }
+    class Settings {
+        <<record>>
+        +string LogDirectory
+    }
+    class PingService {
+        <<static>>
+        +GetGateway() string
+        +CheckAsync(string host, AddressFamily family, CancellationToken token) Task
+    }
+    class MonitorLog {
+        -string directory
+        -string logFile
+        -string csvFile
+        +MonitorLog(string directory)
+        +Write(string message) string
+        +WriteResults(IEnumerable~bool~ results) void
+        +SaveDiagnosticsAsync(string reason, CancellationToken token) Task~string~
+    }
+    class NotifyIcon {
+        <<WinForms>>
+    }
+    class Dns {
+        <<dotnet>>
+    }
+    class Ping {
+        <<dotnet>>
+    }
+    class NetworkInterface {
+        <<dotnet>>
+    }
+    class File {
+        <<dotnet>>
+    }
+    class Process {
+        <<dotnet>>
+    }
+
+    Program ..> MainForm : creates and runs
+    Form <|-- MainForm
+    MainForm *-- NotifyIcon : owns and disposes
+    MainForm *-- Settings : nested type
+    MainForm --> MonitorLog : creates for each session
+    MainForm ..> PingService : calls
+    MainForm ..> File : settings.json
+    MainForm ..> Process : opens log folder
+    PingService ..> NetworkInterface : gateway detection
+    PingService ..> Dns : address resolution
+    PingService ..> Ping : ICMP requests
+    MonitorLog ..> File : TXT and CSV
+    MonitorLog ..> Process : diagnostic commands
+
+    note for PingService "CheckAsync returns Task of tuple: Received (int), Detail (string). Nullable annotations omitted."

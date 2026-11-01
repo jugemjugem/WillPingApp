@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> Visible: アプリ起動
+    state "フォーム表示中（通常／最大化）" as Visible
+    state "タスクトレイに格納" as Tray
+    state "監視停止を待機" as Closing
+
+    Visible --> Visible: 通常／最大化へ変更 / 復元用の状態を保持
+    Visible --> Tray: 最小化 / トレイアイコン表示、タスクバー非表示、Hide
+    Tray --> Visible: トレイアイコンをダブルクリック / Show、元の状態に復元、Activate
+    Visible --> Closing: 閉じる（監視実行中） / Cancel要求
+    Closing --> [*]: 監視完了 / Close、NotifyIconをDispose
+    Visible --> [*]: 閉じる（監視停止中） / NotifyIconをDispose
+
+    note right of Tray
+        最小化では監視を停止しない。
+        復元時にトレイアイコンを非表示にする。
+    end note

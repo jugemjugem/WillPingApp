@@ -1,0 +1,54 @@
+sequenceDiagram
+    actor User as 利用者
+    participant Form as MainForm
+    participant Ping as PingService
+    participant Log as MonitorLog
+    participant OS as OS / ネットワーク
+    participant Disk as ログファイル
+
+    User->>Form: 監視開始
+    Form->>Log: new MonitorLog(logDir)
+    Log->>Disk: フォルダー作成・CSVヘッダー保存
+    Form->>Form: CancellationTokenSource作成・操作ボタン更新
+    Note over Form: Log(message)はTXT保存後に画面へ追記
+    loop キャンセルまたは未処理エラーまで
+        Form->>Ping: GetGateway()
+        Ping->>OS: 稼働中アダプターのIPv4ゲートウェイ取得
+        Ping-->>Form: ゲートウェイまたはnull
+        loop ルーター・8.8.8.8・google.com IPv4・google.com IPv6
+            Form->>Ping: CheckAsync(host, family, token)
+            Ping->>OS: 指定ファミリーのアドレス取得
+            opt アドレスを取得できた場合
+                loop 通常4回（例外・キャンセルで中断）
+                    Ping->>OS: SendPingAsync（タイムアウト1200ms）
+                    OS-->>Ping: 応答・ステータス
+                end
+            end
+            Ping-->>Form: (Received, Detail)
+            Form->>Log: Write(宛先の結果)
+            Log->>Disk: TXT追記
+            Log-->>Form: タイムスタンプ付き行
+            Form->>Form: 画面へ追記・応答1回以上ならOK
+        end
+        Form->>Log: WriteResults(results)
+        Log->>Disk: CSVへ4宛先のOK/FAIL追記
+        alt FAILあり・障害未検出
+            Form->>Form: 障害開始時刻を保持・ログ表示
+            Form->>Log: SaveDiagnosticsAsync(reason, token)
+            Log->>OS: ipconfig /all、route print -4、Get-NetAdapter、DNSキャッシュ取得
+            OS-->>Log: コマンド出力
+            Log->>Disk: 診断TXT保存
+            Log-->>Form: 保存先パス
+            Form->>Form: 保存先をログ表示・障害検出状態に更新
+        else FAILあり・障害継続中
+            Form->>Form: 障害継続をログ表示
+        else 全宛先OK・障害継続中
+            Form->>Form: 経過時間と復旧をログ表示・障害状態を解除
+        else 全宛先OK
+            Form->>Form: 正常をログ表示
+        end
+        Form->>Form: Task.Delay(60秒, token)
+    end
+    Note over User,Form: 停止ボタンまたはフォームを閉じる操作でCancel要求。<br/>キャンセル時は停止ログ、その他の未処理エラー時はメッセージを表示。
+    Form->>Form: finallyでボタンを戻し、CancellationTokenSourceを破棄
+    Note over Form: 閉じる操作の場合は監視完了を待ってCloseを再実行し、トレイアイコンを破棄
