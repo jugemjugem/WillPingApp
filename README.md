@@ -1,2 +1,19 @@
 # WillPingApp
-Pingを打つよ
+
+IPv4・IPv6の疎通を記録するWindowsフォームアプリです。
+
+## 起動方法
+
+Windowsと.NET 10が必要です。ビルドするPCに [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) をインストールし、`build.bat` をダブルクリックしてください。成功すると `publish\WillPingApp.exe` が作成されます。実行には.NET 10 Desktop Runtimeが必要です。
+
+SDKをインストールしている場合は、コマンドから直接起動することもできます。
+
+```powershell
+dotnet run --project WillPingApp/WillPingApp.csproj
+```
+
+「監視開始」でルーター、外部IPv4、IPv4/IPv6の名前解決と疎通を検査します。各宛先に4回送信し、1回でも応答があればOKとします。検査終了後に60秒待って繰り返します。「停止」またはウィンドウを閉じると終了します。
+
+ログは既定で `%LOCALAPPDATA%\WillPingApp\NetworkMonitorLogs` に保存します。「保存先を変更」からフォルダーを選択でき、選択した場所は次回起動時にも引き継がれます。変更は監視停止中に行ってください。障害を初めて検出した際には診断情報も保存します。診断ファイルにはPC名やネットワーク設定などが含まれるため、共有前に内容を確認してください。
+
+ゲートウェイは稼働中のネットワークアダプターから取得します。複数のアダプターがある場合、実際に利用している経路と異なるゲートウェイが選ばれることがあります。Pingの失敗は通信障害の確定診断ではありません。
